@@ -15,10 +15,12 @@
 #include <stdarg.h>
 #include <io.h>
 #include <direct.h>
+#include "dsconfig.h"
 
 
 extern int dd_attack_main(int argc, char** argv);
 extern int dd_mag_main(int argc, char** argv);
+extern int dd_veh_main(int argc, char** argv);
 
 #define VANILLA_SIZE 7297853249ULL
 #define BIN_HINT "7017f9bb9d52fc1c4433599203cc51b1.bin"
@@ -213,6 +215,7 @@ int main(int argc, char** argv) {
     char work[MAX_PATH], tool[MAX_PATH], ini[MAX_PATH];
     char core_a[MAX_PATH], core_m[MAX_PATH];
     char out_a[MAX_PATH], out_m[MAX_PATH];
+    char vcore[5][MAX_PATH], vout[5][MAX_PATH];
     char a_fwd[MAX_PATH], af_fwd[MAX_PATH], w_fwd[MAX_PATH];
     const char* mode = "install";
     const char* hint = NULL;
@@ -307,6 +310,17 @@ int main(int argc, char** argv) {
     snprintf(core_m, sizeof(core_m), "%s\\src_m.core", work);
     snprintf(out_a, sizeof(out_a), "%s\\pack\\ds\\entities\\weapons\\attack_parameter_collection.core", work);
     snprintf(out_m, sizeof(out_m), "%s\\pack\\ds\\entities\\weapons\\magazine_parameter_collection.core", work);
+    {
+        static const char* vnames[5] = {
+            "pe_ds_vehicle_bkyk", "pe_ds_vehicle_ca02", "pe_ds_vehicle_ca03",
+            "pe_ds_vehicle_casp", "pe_ds_vehicle_celd"
+        };
+        int vi;
+        for (vi = 0; vi < 5; vi++) {
+            snprintf(vcore[vi], sizeof(vcore[vi]), "%s\\src_v%d.core", work, vi);
+            snprintf(vout[vi], sizeof(vout[vi]), "%s\\pack\\ds\\entities\\vehicle\\%s.core", work, vnames[vi]);
+        }
+    }
 
     if (!fexists(archv)) {
         if (fsize(arch) != VANILLA_SIZE) {
@@ -321,7 +335,7 @@ int main(int argc, char** argv) {
         pause_exit(1);
     }
 
-    printf("[1/6] Verifying the source archive\n");
+    printf("[1/7] Verifying the source archive\n");
     snprintf(af_fwd, sizeof(af_fwd), "%s", first_run ? arch : archv); to_fwd(af_fwd);
     snprintf(w_fwd, sizeof(w_fwd), "%s", work); to_fwd(w_fwd);
     {
@@ -330,6 +344,18 @@ int main(int argc, char** argv) {
         run_exe(tool, args, 1);
         snprintf(args, sizeof(args), "-e \"%s\" \"ds/entities/weapons/magazine_parameter_collection\" \"%s/src_m.core\"", af_fwd, w_fwd);
         run_exe(tool, args, 1);
+        {
+            static const char* vp[5] = {
+                "pe_ds_vehicle_bkyk", "pe_ds_vehicle_ca02", "pe_ds_vehicle_ca03",
+                "pe_ds_vehicle_casp", "pe_ds_vehicle_celd"
+            };
+            int vi;
+            for (vi = 0; vi < 5; vi++) {
+                snprintf(args, sizeof(args), "-e \"%s\" \"ds/entities/vehicle/%s\" \"%s/src_v%d.core\"",
+                         af_fwd, vp[vi], w_fwd, vi);
+                run_exe(tool, args, 1);
+            }
+        }
     }
     if (!fexists(core_a)) { printf("[X] Extraction failed (attack).\n"); pause_exit(1); }
     if (!fexists(core_m)) { printf("[X] Extraction failed (magazine).\n"); pause_exit(1); }
@@ -340,6 +366,16 @@ int main(int argc, char** argv) {
         v1[0] = "dspatch"; v1[1] = core_a; v1[2] = "--verify";
         v2[0] = "dspatch_mag"; v2[1] = core_m; v2[2] = "--verify";
         if (dd_attack_main(3, v1) != 0 || dd_mag_main(3, v2) != 0) bad = 1;
+        {
+            int vi;
+            char* vv[3];
+            vv[0] = "dspatch_veh"; vv[2] = "--verify";
+            for (vi = 0; vi < 5 && !bad; vi++) {
+                if (!fexists(vcore[vi])) continue;
+                vv[1] = vcore[vi];
+                if (dd_veh_main(3, vv) != 0) bad = 1;
+            }
+        }
         if (bad) {
             printf("[X] The weapon data in the archive is not the vanilla table.\n");
             printf("    Another mod (or an incomplete restore) is present.\n");
@@ -349,20 +385,20 @@ int main(int argc, char** argv) {
         printf("     all cores match the vanilla tables.\n");
 
         if (first_run) {
-            printf("[2/6] Backing up the original archive (7.3 GB)\n");
+            printf("[2/7] Backing up the original archive (7.3 GB)\n");
             if (!CopyFileA(arch, archv, FALSE)) { printf("[X] Backup failed.\n"); pause_exit(1); }
-        } else printf("[2/6] Backup present and verified\n");
+        } else printf("[2/7] Backup present and verified\n");
 
-        printf("[3/6] Restoring clean state from backup\n");
+        printf("[3/7] Restoring clean state from backup\n");
         if (!CopyFileA(archv, arch, FALSE)) { printf("[X] Restore failed.\n"); pause_exit(1); }
 
-        printf("[4/6] Patching attack parameters\n");
+        printf("[4/7] Patching attack parameters\n");
         {
             char* p1[4];
             p1[0] = "dspatch"; p1[1] = core_a; p1[2] = out_a; p1[3] = ini;
             if (dd_attack_main(4, p1) != 0) { printf("[X] Attack patch failed.\n"); pause_exit(1); }
         }
-        printf("[5/6] Patching magazines\n");
+        printf("[5/7] Patching magazines\n");
         {
             char* p2[4];
             p2[0] = "dspatch_mag"; p2[1] = core_m; p2[2] = out_m; p2[3] = ini;
@@ -370,8 +406,34 @@ int main(int argc, char** argv) {
         }
 
 
+        printf("[6/7] Patching vehicles\n");
+        {
+            int vi;
+            char top[32], tor[32], bst[32];
+            char* pv[6];
+            char vdir[MAX_PATH];
+            snprintf(vdir, sizeof(vdir), "%s\\pack\\ds\\entities\\vehicle", work);
+            mkdir_p(vdir);
+            for (vi = 0; vi < 5; vi++) {
+                int truck;
+                if (!fexists(vcore[vi])) continue;
+                if (vi == 0) truck = 0;              /* bike */
+                else if (vi == 1 || vi == 2) truck = 1; /* trucks */
+                else continue;                        /* casp / celd: vanilla */
+                snprintf(top, sizeof(top), "%.6f", ds_veh_top(truck));
+                snprintf(tor, sizeof(tor), "%.6f", ds_veh_torque(truck));
+                snprintf(bst, sizeof(bst), "%.6f", ds_veh_boost(truck));
+                pv[0] = "dspatch_veh"; pv[1] = vcore[vi]; pv[2] = vout[vi];
+                pv[3] = top; pv[4] = tor; pv[5] = bst;
+                if (dd_veh_main(6, pv) != 0) { printf("[X] Vehicle patch failed.\n"); pause_exit(1); }
+            }
+        }
+
         {
             int same = cmp_files(core_a, out_a) && cmp_files(core_m, out_m);
+            if (fexists(vcore[0])) same = same && cmp_files(vcore[0], vout[0]);
+            if (fexists(vcore[1])) same = same && cmp_files(vcore[1], vout[1]);
+            if (fexists(vcore[2])) same = same && cmp_files(vcore[2], vout[2]);
             if (same) {
                 rm_tree(work);
                 printf("\n[OK] Every multiplier is 1 - the archive was left untouched (vanilla).\n");
@@ -380,7 +442,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    printf("[6/6] Repacking the patched files (7.3 GB, takes a few minutes)\n");
+    printf("[7/7] Repacking the patched files (7.3 GB, takes a few minutes)\n");
     snprintf(a_fwd, sizeof(a_fwd), "%s", arch); to_fwd(a_fwd);
     {
         char args[2048];
