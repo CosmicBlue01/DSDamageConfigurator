@@ -73,9 +73,9 @@ int main(int argc, char** argv) {
     boost = (float)atof(argv[5]);
     if (!(top > 0 && torque > 0 && boost > 0)) { printf("multipliers must be > 0\n"); return 4; }
 
-    if (top != 1.0f) w32(data + off + 16, f32(data + off + 16) * top);
-    if (torque != 1.0f) w32(data + off, f32(data + off) * torque);
-    if (boost != 1.0f) w32(data + off + 20, f32(data + off + 20) * boost);
+    if (top > 0.0f) w32(data + off + 16, top);
+    if (torque > 0.0f) w32(data + off, torque);
+    if (boost > 0.0f) w32(data + off + 20, boost);
 
     {
         FILE* f = fopen(argv[2], "wb");

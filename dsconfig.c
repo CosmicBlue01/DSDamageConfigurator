@@ -16,9 +16,9 @@ static float gClip[CATEGORY_COUNT];
 static float gPellet[CATEGORY_COUNT];
 static int   gLoaded;
 static float gZipline = 1.0f;
-static float gVehTop[3] = {1.0f, 1.0f, 1.0f};
-static float gVehTorque[3] = {1.0f, 1.0f, 1.0f};
-static float gVehBoost[3] = {1.0f, 1.0f, 1.0f};
+static float gVehTop[4] = {60.0f, 50.0f, 60.0f, 80.0f};
+static float gVehTorque[4] = {500.0f, 500.0f, 500.0f, 500.0f};
+static float gVehBoost[4] = {3.0f, 3.0f, 3.0f, 3.0f};
 
 static int ieq(const char* a, const char* b) {
     while (*a && *b) {
@@ -70,8 +70,9 @@ int ds_config_load(const char* path) {
             if (ieq(p, "General") || ieq(p, "Filter")) section = -2;
             else if (ieq(p, "Zipline")) section = -3;
             else if (ieq(p, "Bike")) section = -4;
-            else if (ieq(p, "Truck")) section = -5;
-            else if (ieq(p, "SpeedCar")) section = -6;
+            else if (ieq(p, "TruckCA02")) section = -5;
+            else if (ieq(p, "TruckCA03")) section = -6;
+            else if (ieq(p, "SpeedCar")) section = -7;
             else section = category_of(p);
             continue;
         }
@@ -88,8 +89,8 @@ int ds_config_load(const char* path) {
             if (ieq(p, "Speed")) { float v = (float)atof(eq + 1); if (v > 0.0f) gZipline = v; }
             continue;
         }
-        if (section == -4 || section == -5 || section == -6) {
-            int k = (section == -4) ? 0 : ((section == -5) ? 1 : 2);
+        if (section <= -4 && section >= -7) {
+            int k = -4 - section;
             float v = (float)atof(eq + 1);
             if (v > 0.0f) {
                 if (ieq(p, "TopSpeed")) gVehTop[k] = v;

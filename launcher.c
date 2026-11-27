@@ -415,12 +415,9 @@ int main(int argc, char** argv) {
             snprintf(vdir, sizeof(vdir), "%s\\pack\\ds\\entities\\vehicle", work);
             mkdir_p(vdir);
             for (vi = 0; vi < 5; vi++) {
-                int kind;
+                int kind = vi;
                 if (!fexists(vcore[vi])) continue;
-                if (vi == 0) kind = 0;                  /* bike */
-                else if (vi == 1 || vi == 2) kind = 1;  /* trucks */
-                else if (vi == 3) kind = 2;             /* speed car */
-                else continue;                          /* celd: vanilla */
+                if (vi > 3) continue;                   /* celd: vanilla */
                 snprintf(top, sizeof(top), "%.6f", ds_veh_top(kind));
                 snprintf(tor, sizeof(tor), "%.6f", ds_veh_torque(kind));
                 snprintf(bst, sizeof(bst), "%.6f", ds_veh_boost(kind));
