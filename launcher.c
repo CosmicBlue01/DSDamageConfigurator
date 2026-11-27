@@ -1,8 +1,8 @@
-/* DSDamage.exe - installer / restorer for the DSDamage configurator.
+/* DSTweaks.exe - installer / restorer for the DSTweaks mod.
  *
- *   DSDamage.exe             install (double-click friendly)
- *   DSDamage.exe install     same
- *   DSDamage.exe restore     restore the original archive
+ *   DSTweaks.exe             install (double-click friendly)
+ *   DSTweaks.exe install     same
+ *   DSTweaks.exe restore     restore the original archive
  *   optional next argument: game folder
  *
  * The two patchers (dspatch.c / dspatch_mag.c) are linked in; the archive is
@@ -16,8 +16,11 @@
 #include <io.h>
 #include <direct.h>
 
+#include "dsconfig.h"
+
 extern int dd_attack_main(int argc, char** argv);
 extern int dd_mag_main(int argc, char** argv);
+extern int dd_zip_main(int argc, char** argv);
 
 #define VANILLA_SIZE 7297853249ULL
 #define BIN_HINT "7017f9bb9d52fc1c4433599203cc51b1.bin"
@@ -210,7 +213,8 @@ static int cmp_files(const char* a, const char* b) {
 int main(int argc, char** argv) {
     char game[MAX_PATH], data[MAX_PATH], bin[MAX_PATH], arch[MAX_PATH], archv[MAX_PATH];
     char work[MAX_PATH], tool[MAX_PATH], ini[MAX_PATH];
-    char core_a[MAX_PATH], core_m[MAX_PATH], out_a[MAX_PATH], out_m[MAX_PATH];
+    char core_a[MAX_PATH], core_m[MAX_PATH], core_z[MAX_PATH];
+    char out_a[MAX_PATH], out_m[MAX_PATH], out_z[MAX_PATH];
     char a_fwd[MAX_PATH], af_fwd[MAX_PATH], w_fwd[MAX_PATH];
     const char* mode = "install";
     const char* hint = NULL;
@@ -227,13 +231,13 @@ int main(int argc, char** argv) {
         } else if (fisdir(argv[1])) {
             hint = argv[1];
         } else {
-            printf("Usage: DSDamage.exe [install|restore] [game folder]\n");
+            printf("Usage: DSTweaks.exe [install|restore] [game folder]\n");
             pause_exit(1);
         }
     }
     if (!(argc > 1) || fisdir(argv[1])) {
         char line[64];
-        printf("\n  1. Install / apply DSDamage.ini\n");
+        printf("\n  1. Install / apply DSTweaks.ini\n");
         printf("  2. Restore the original archive\n");
         printf("  0. Exit\n\n");
         printf("Choose [1]: ");
@@ -243,7 +247,7 @@ int main(int argc, char** argv) {
     }
 
     printf("============================================================\n");
-    printf("  DSDamage configurator 1.0  -  %s\n", strcmp(mode, "restore") == 0 ? "restore" : "install");
+    printf("  DSTweaks 1.0  -  %s\n", strcmp(mode, "restore") == 0 ? "restore" : "install");
     printf("============================================================\n");
 
     if (!find_game(hint, game)) { printf("[X] Game folder not found.\n"); pause_exit(1); }
@@ -272,9 +276,9 @@ int main(int argc, char** argv) {
     }
 
     snprintf(tool, sizeof(tool), "%s\\bin\\DecimaExplorer.exe", g_exe_dir);
-    snprintf(ini, sizeof(ini), "%s\\DSDamage.ini", g_exe_dir);
+    snprintf(ini, sizeof(ini), "%s\\DSTweaks.ini", g_exe_dir);
     if (!fexists(tool)) { printf("[X] bin\\DecimaExplorer.exe missing.\n"); pause_exit(1); }
-    if (!fexists(ini)) { printf("[X] DSDamage.ini missing.\n"); pause_exit(1); }
+    if (!fexists(ini)) { printf("[X] DSTweaks.ini missing.\n"); pause_exit(1); }
 
     {
         char oo2[MAX_PATH], gameoo[MAX_PATH];
@@ -286,7 +290,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    snprintf(work, sizeof(work), "%s\\_dsdamage_wk", game);
+    snprintf(work, sizeof(work), "%s\\_dstweaks_tmp", game);
     if (fisdir(work)) rm_tree(work);
     {
         char pk[MAX_PATH];
@@ -303,8 +307,10 @@ int main(int argc, char** argv) {
 
     snprintf(core_a, sizeof(core_a), "%s\\src_a.core", work);
     snprintf(core_m, sizeof(core_m), "%s\\src_m.core", work);
+    snprintf(core_z, sizeof(core_z), "%s\\src_z.core", work);
     snprintf(out_a, sizeof(out_a), "%s\\pack\\ds\\entities\\weapons\\attack_parameter_collection.core", work);
     snprintf(out_m, sizeof(out_m), "%s\\pack\\ds\\entities\\weapons\\magazine_parameter_collection.core", work);
+    snprintf(out_z, sizeof(out_z), "%s\\pack\\ds\\entities\\player\\dsplayerparamcomponent.core", work);
 
     if (!fexists(archv)) {
         if (fsize(arch) != VANILLA_SIZE) {
@@ -319,7 +325,7 @@ int main(int argc, char** argv) {
         pause_exit(1);
     }
 
-    printf("[1/6] Verifying the source archive\n");
+    printf("[1/7] Verifying the source archive\n");
     snprintf(af_fwd, sizeof(af_fwd), "%s", first_run ? arch : archv); to_fwd(af_fwd);
     snprintf(w_fwd, sizeof(w_fwd), "%s", work); to_fwd(w_fwd);
     {
@@ -328,51 +334,73 @@ int main(int argc, char** argv) {
         run_exe(tool, args, 1);
         snprintf(args, sizeof(args), "-e \"%s\" \"ds/entities/weapons/magazine_parameter_collection\" \"%s/src_m.core\"", af_fwd, w_fwd);
         run_exe(tool, args, 1);
+        snprintf(args, sizeof(args), "-e \"%s\" \"ds/entities/player/dsplayerparamcomponent\" \"%s/src_z.core\"", af_fwd, w_fwd);
+        run_exe(tool, args, 1);
     }
     if (!fexists(core_a)) { printf("[X] Extraction failed (attack).\n"); pause_exit(1); }
     if (!fexists(core_m)) { printf("[X] Extraction failed (magazine).\n"); pause_exit(1); }
 
     {
-        char* v1[3]; char* v2[3];
+        char* v1[3]; char* v2[3]; char* v3[3];
+        int bad = 0;
         v1[0] = "dspatch"; v1[1] = core_a; v1[2] = "--verify";
         v2[0] = "dspatch_mag"; v2[1] = core_m; v2[2] = "--verify";
-        if (dd_attack_main(3, v1) != 0 || dd_mag_main(3, v2) != 0) {
+        if (dd_attack_main(3, v1) != 0 || dd_mag_main(3, v2) != 0) bad = 1;
+        if (fexists(core_z)) {
+            v3[0] = "dspatch_zip"; v3[1] = core_z; v3[2] = "--verify";
+            if (dd_zip_main(3, v3) != 0) bad = 1;
+        }
+        if (bad) {
             printf("[X] The weapon data in the archive is not the vanilla table.\n");
             printf("    Another mod (or an incomplete restore) is present.\n");
             printf("    Delete \"%s\" and verify the game files.\n", archv);
             pause_exit(1);
         }
-        printf("     both cores match the vanilla tables.\n");
+        printf("     all cores match the vanilla tables.\n");
 
         if (first_run) {
-            printf("[2/6] Backing up the original archive (7.3 GB)\n");
+            printf("[2/7] Backing up the original archive (7.3 GB)\n");
             if (!CopyFileA(arch, archv, FALSE)) { printf("[X] Backup failed.\n"); pause_exit(1); }
-        } else printf("[2/6] Backup present and verified\n");
+        } else printf("[2/7] Backup present and verified\n");
 
-        printf("[3/6] Restoring clean state from backup\n");
+        printf("[3/7] Restoring clean state from backup\n");
         if (!CopyFileA(archv, arch, FALSE)) { printf("[X] Restore failed.\n"); pause_exit(1); }
 
-        printf("[4/6] Patching attack parameters\n");
+        printf("[4/7] Patching attack parameters\n");
         {
             char* p1[4];
             p1[0] = "dspatch"; p1[1] = core_a; p1[2] = out_a; p1[3] = ini;
             if (dd_attack_main(4, p1) != 0) { printf("[X] Attack patch failed.\n"); pause_exit(1); }
         }
-        printf("[5/6] Patching magazines\n");
+        printf("[5/7] Patching magazines\n");
         {
             char* p2[4];
             p2[0] = "dspatch_mag"; p2[1] = core_m; p2[2] = out_m; p2[3] = ini;
             if (dd_mag_main(4, p2) != 0) { printf("[X] Magazine patch failed.\n"); pause_exit(1); }
         }
+        if (fexists(core_z)) {
+            char zval[32], zdir[MAX_PATH];
+            char* p3[4];
+            snprintf(zval, sizeof(zval), "%.6f", ds_zipline_speed());
+            snprintf(zdir, sizeof(zdir), "%s\\pack\\ds\\entities\\player", work);
+            mkdir_p(zdir);
+            printf("[6/7] Patching zipline parameters (x%s)\n", zval);
+            p3[0] = "dspatch_zip"; p3[1] = core_z; p3[2] = out_z; p3[3] = zval;
+            if (dd_zip_main(4, p3) != 0) { printf("[X] Zipline patch failed.\n"); pause_exit(1); }
+        }
 
-        if (cmp_files(core_a, out_a) && cmp_files(core_m, out_m)) {
-            rm_tree(work);
-            printf("\n[OK] Every multiplier is 1 - the archive was left untouched (vanilla).\n");
-            pause_exit(0);
+        {
+            int same = cmp_files(core_a, out_a) && cmp_files(core_m, out_m);
+            if (fexists(core_z)) same = same && cmp_files(core_z, out_z);
+            if (same) {
+                rm_tree(work);
+                printf("\n[OK] Every multiplier is 1 - the archive was left untouched (vanilla).\n");
+                pause_exit(0);
+            }
         }
     }
 
-    printf("[6/6] Repacking both files (7.3 GB, takes a few minutes)\n");
+    printf("[7/7] Repacking the patched files (7.3 GB, takes a few minutes)\n");
     snprintf(a_fwd, sizeof(a_fwd), "%s", arch); to_fwd(a_fwd);
     {
         char args[2048];
@@ -384,7 +412,7 @@ int main(int argc, char** argv) {
         printf("     retrying with relative paths...\n");
         GetCurrentDirectoryA(sizeof(prev), prev);
         _chdir(game);
-        snprintf(pk, sizeof(pk), "_dsdamage_wk/pack");
+        snprintf(pk, sizeof(pk), "_dstweaks_tmp/pack");
         {
             char args[2048], rel[MAX_PATH];
             snprintf(rel, sizeof(rel), "data/%s", bin);
@@ -401,8 +429,8 @@ int main(int argc, char** argv) {
     }
 
     rm_tree(work);
-    printf("\n[OK] Done. Values were taken from DSDamage.ini\n");
-    printf("     To undo, run: DSDamage.exe restore\n");
+    printf("\n[OK] Done. Values were taken from DSTweaks.ini\n");
+    printf("     To undo, run: DSTweaks.exe restore\n");
     pause_exit(0);
     return 0;
 }

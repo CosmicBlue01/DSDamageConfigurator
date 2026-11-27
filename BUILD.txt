@@ -1,0 +1,36 @@
+DSTweaks - source code
+======================
+
+  DSTweaks.exe <- launcher.c + dspatch.c + dspatch_mag.c + dspatch_zip.c
+                  + dsconfig.c (+ vanilla_table.h, attack_categories.h,
+                    enemy_table.h, mag_table.h)
+
+dspatch*.c are compiled with their main() renamed and the launcher calls them
+directly. Ordinary C (C99), no libraries beyond the C runtime.
+
+What it does: extracts data cores from the game archive with the bundled
+Decima-Explorer, verifies them against the embedded vanilla tables, applies the
+multipliers from DSTweaks.ini, repacks the archive, and restores the original if
+anything fails. No network access, no process injection.
+
+Build with zig:
+
+  zig cc -target x86_64-windows-gnu -O2 -Dmain=dd_attack_main -c dspatch.c -o dspatch.o
+  zig cc -target x86_64-windows-gnu -O2 -Dmain=dd_mag_main    -c dspatch_mag.c -o dspatch_mag.o
+  zig cc -target x86_64-windows-gnu -O2 -Dmain=dd_zip_main    -c dspatch_zip.c -o dspatch_zip.o
+  zig cc -target x86_64-windows-gnu -O2 -c dsconfig.c -o dsconfig.o
+  zig cc -target x86_64-windows-gnu -O2 -static -o DSTweaks.exe \
+         launcher.c dspatch.o dspatch_mag.o dspatch_zip.o dsconfig.o
+
+Build with MSVC:
+
+  cl /O2 /Dmain=dd_attack_main /c dspatch.c
+  cl /O2 /Dmain=dd_mag_main /c dspatch_mag.c
+  cl /O2 /Dmain=dd_zip_main /c dspatch_zip.c
+  cl /O2 /c dsconfig.c
+  cl /O2 launcher.c dspatch.obj dspatch_mag.obj dspatch_zip.obj dsconfig.obj /Fe:DSTweaks.exe
+
+Third-party: bin\DecimaExplorer.exe is Decima-Explorer by Jayveer,
+https://github.com/Jayveer/Decima-Explorer (MIT, license text in the release
+package). The bundled msvcp140.dll / vcruntime140*.dll are the Microsoft Visual
+C++ runtime it requires.

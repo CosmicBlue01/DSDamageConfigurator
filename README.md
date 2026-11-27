@@ -1,6 +1,6 @@
-# DSDamage Configurator — source
+# DSTweaks — source
 
-Source code of the installer/patcher used by the **DSDamage Configurator** mod for
+Source code of the installer/patcher used by the **DSTweaks** mod for
 *Death Stranding Director's Cut*. Published for transparency and for the Nexus
 Mods manual review process.
 
@@ -16,6 +16,7 @@ access the network.
 | `launcher.c` | console front-end: game detection, backup, install/restore menu, calls the patchers, drives the repack, restores on failure |
 | `dspatch.c` | verifies and patches `attack_parameter_collection.core` (damage / range) |
 | `dspatch_mag.c` | verifies and patches `magazine_parameter_collection.core` (magazine / pellets) |
+| `dspatch_zip.c` | verifies and patches `dsplayerparamcomponent.core` (zipline speed / turn / acceleration) |
 | `dsconfig.c/.h` | `DSDamage.ini` parser shared by both patchers |
 | `vanilla_table.h` | 247 vanilla attack records (id + damage bits) used for verification |
 | `attack_categories.h` | category per `EDSAttackId` |
@@ -30,7 +31,7 @@ Zig (what the released binaries were built with):
 zig cc -target x86_64-windows-gnu -O2 -Dmain=dd_attack_main -c dspatch.c -o dspatch.o
 zig cc -target x86_64-windows-gnu -O2 -Dmain=dd_mag_main    -c dspatch_mag.c -o dspatch_mag.o
 zig cc -target x86_64-windows-gnu -O2 -c dsconfig.c -o dsconfig.o
-zig cc -target x86_64-windows-gnu -O2 -static -o DSDamage.exe \
+zig cc -target x86_64-windows-gnu -O2 -static -o DSTweaks.exe \
        launcher.c dspatch.o dspatch_mag.o dsconfig.o
 ```
 
@@ -40,10 +41,10 @@ MSVC:
 cl /O2 /Dmain=dd_attack_main /c dspatch.c
 cl /O2 /Dmain=dd_mag_main /c dspatch_mag.c
 cl /O2 /c dsconfig.c
-cl /O2 launcher.c dspatch.obj dspatch_mag.obj dsconfig.obj /Fe:DSDamage.exe
+cl /O2 launcher.c dspatch.obj dspatch_mag.obj dsconfig.obj /Fe:DSTweaks.exe
 ```
 
-`DSDamage.exe` expects the release package layout (`bin\DecimaExplorer.exe`,
+`DSTweaks.exe` expects the release package layout (`bin\DecimaExplorer.exe`,
 `DSDamage.ini`, and the game's `oo2core_7_win64.dll` copied at runtime).
 
 ## Third-party

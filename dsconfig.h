@@ -17,3 +17,4 @@ float ds_damage(int cat);
 float ds_range(int cat);
 float ds_clip(int cat);
 float ds_pellet(int cat);
+float ds_zipline_speed(void);

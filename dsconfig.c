@@ -15,6 +15,7 @@ static float gRange[CATEGORY_COUNT];
 static float gClip[CATEGORY_COUNT];
 static float gPellet[CATEGORY_COUNT];
 static int   gLoaded;
+static float gZipline = 1.0f;
 
 static int ieq(const char* a, const char* b) {
     while (*a && *b) {
@@ -64,6 +65,7 @@ int ds_config_load(const char* path) {
             p++;
             trim(p);
             if (ieq(p, "General") || ieq(p, "Filter")) section = -2;
+            else if (ieq(p, "Zipline")) section = -3;
             else section = category_of(p);
             continue;
         }
@@ -74,6 +76,10 @@ int ds_config_load(const char* path) {
         trim(eq + 1);
         if (section == -2) {
             if (ieq(p, "ExcludeEnemy")) gExcludeEnemy = atoi(eq + 1) ? 1 : 0;
+            continue;
+        }
+        if (section == -3) {
+            if (ieq(p, "Speed")) { float v = (float)atof(eq + 1); if (v > 0.0f) gZipline = v; }
             continue;
         }
         if (section < 0) continue;
@@ -96,3 +102,4 @@ float ds_damage(int cat) { return gDamage[cat]; }
 float ds_range(int cat) { return gRange[cat]; }
 float ds_clip(int cat) { return gClip[cat]; }
 float ds_pellet(int cat) { return gPellet[cat]; }
+float ds_zipline_speed(void) { return gZipline; }
