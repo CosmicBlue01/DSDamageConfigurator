@@ -16,9 +16,9 @@ static float gClip[CATEGORY_COUNT];
 static float gPellet[CATEGORY_COUNT];
 static int   gLoaded;
 static float gZipline = 1.0f;
-static float gVehTop[2] = {1.0f, 1.0f};
-static float gVehTorque[2] = {1.0f, 1.0f};
-static float gVehBoost[2] = {1.0f, 1.0f};
+static float gVehTop[3] = {1.0f, 1.0f, 1.0f};
+static float gVehTorque[3] = {1.0f, 1.0f, 1.0f};
+static float gVehBoost[3] = {1.0f, 1.0f, 1.0f};
 
 static int ieq(const char* a, const char* b) {
     while (*a && *b) {
@@ -71,6 +71,7 @@ int ds_config_load(const char* path) {
             else if (ieq(p, "Zipline")) section = -3;
             else if (ieq(p, "Bike")) section = -4;
             else if (ieq(p, "Truck")) section = -5;
+            else if (ieq(p, "SpeedCar")) section = -6;
             else section = category_of(p);
             continue;
         }
@@ -87,8 +88,8 @@ int ds_config_load(const char* path) {
             if (ieq(p, "Speed")) { float v = (float)atof(eq + 1); if (v > 0.0f) gZipline = v; }
             continue;
         }
-        if (section == -4 || section == -5) {
-            int k = (section == -4) ? 0 : 1;
+        if (section == -4 || section == -5 || section == -6) {
+            int k = (section == -4) ? 0 : ((section == -5) ? 1 : 2);
             float v = (float)atof(eq + 1);
             if (v > 0.0f) {
                 if (ieq(p, "TopSpeed")) gVehTop[k] = v;
@@ -118,6 +119,6 @@ float ds_range(int cat) { return gRange[cat]; }
 float ds_clip(int cat) { return gClip[cat]; }
 float ds_pellet(int cat) { return gPellet[cat]; }
 float ds_zipline_speed(void) { return gZipline; }
-float ds_veh_top(int truck) { return gVehTop[truck ? 1 : 0]; }
-float ds_veh_torque(int truck) { return gVehTorque[truck ? 1 : 0]; }
-float ds_veh_boost(int truck) { return gVehBoost[truck ? 1 : 0]; }
+float ds_veh_top(int kind) { return gVehTop[kind]; }
+float ds_veh_torque(int kind) { return gVehTorque[kind]; }
+float ds_veh_boost(int kind) { return gVehBoost[kind]; }

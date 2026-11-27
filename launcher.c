@@ -415,14 +415,15 @@ int main(int argc, char** argv) {
             snprintf(vdir, sizeof(vdir), "%s\\pack\\ds\\entities\\vehicle", work);
             mkdir_p(vdir);
             for (vi = 0; vi < 5; vi++) {
-                int truck;
+                int kind;
                 if (!fexists(vcore[vi])) continue;
-                if (vi == 0) truck = 0;              /* bike */
-                else if (vi == 1 || vi == 2) truck = 1; /* trucks */
-                else continue;                        /* casp / celd: vanilla */
-                snprintf(top, sizeof(top), "%.6f", ds_veh_top(truck));
-                snprintf(tor, sizeof(tor), "%.6f", ds_veh_torque(truck));
-                snprintf(bst, sizeof(bst), "%.6f", ds_veh_boost(truck));
+                if (vi == 0) kind = 0;                  /* bike */
+                else if (vi == 1 || vi == 2) kind = 1;  /* trucks */
+                else if (vi == 3) kind = 2;             /* speed car */
+                else continue;                          /* celd: vanilla */
+                snprintf(top, sizeof(top), "%.6f", ds_veh_top(kind));
+                snprintf(tor, sizeof(tor), "%.6f", ds_veh_torque(kind));
+                snprintf(bst, sizeof(bst), "%.6f", ds_veh_boost(kind));
                 pv[0] = "dspatch_veh"; pv[1] = vcore[vi]; pv[2] = vout[vi];
                 pv[3] = top; pv[4] = tor; pv[5] = bst;
                 if (dd_veh_main(6, pv) != 0) { printf("[X] Vehicle patch failed.\n"); pause_exit(1); }
@@ -434,6 +435,7 @@ int main(int argc, char** argv) {
             if (fexists(vcore[0])) same = same && cmp_files(vcore[0], vout[0]);
             if (fexists(vcore[1])) same = same && cmp_files(vcore[1], vout[1]);
             if (fexists(vcore[2])) same = same && cmp_files(vcore[2], vout[2]);
+            if (fexists(vcore[3])) same = same && cmp_files(vcore[3], vout[3]);
             if (same) {
                 rm_tree(work);
                 printf("\n[OK] Every multiplier is 1 - the archive was left untouched (vanilla).\n");
