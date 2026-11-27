@@ -1,7 +1,7 @@
 DSTweaks - source code
 ======================
 
-  DSTweaks.exe <- launcher.c + dspatch.c + dspatch_mag.c + dspatch_zip.c
+  DSTweaks.exe <- launcher.c + dspatch.c + dspatch_mag.c
                   + dsconfig.c (+ vanilla_table.h, attack_categories.h,
                     enemy_table.h, mag_table.h)
 
@@ -17,18 +17,16 @@ Build with zig:
 
   zig cc -target x86_64-windows-gnu -O2 -Dmain=dd_attack_main -c dspatch.c -o dspatch.o
   zig cc -target x86_64-windows-gnu -O2 -Dmain=dd_mag_main    -c dspatch_mag.c -o dspatch_mag.o
-  zig cc -target x86_64-windows-gnu -O2 -Dmain=dd_zip_main    -c dspatch_zip.c -o dspatch_zip.o
   zig cc -target x86_64-windows-gnu -O2 -c dsconfig.c -o dsconfig.o
   zig cc -target x86_64-windows-gnu -O2 -static -o DSTweaks.exe \
-         launcher.c dspatch.o dspatch_mag.o dspatch_zip.o dsconfig.o
+         launcher.c dspatch.o dspatch_mag.o dsconfig.o
 
 Build with MSVC:
 
   cl /O2 /Dmain=dd_attack_main /c dspatch.c
   cl /O2 /Dmain=dd_mag_main /c dspatch_mag.c
-  cl /O2 /Dmain=dd_zip_main /c dspatch_zip.c
   cl /O2 /c dsconfig.c
-  cl /O2 launcher.c dspatch.obj dspatch_mag.obj dspatch_zip.obj dsconfig.obj /Fe:DSTweaks.exe
+  cl /O2 launcher.c dspatch.obj dspatch_mag.obj dsconfig.obj /Fe:DSTweaks.exe
 
 Third-party: bin\DecimaExplorer.exe is Decima-Explorer by Jayveer,
 https://github.com/Jayveer/Decima-Explorer (MIT, license text in the release
