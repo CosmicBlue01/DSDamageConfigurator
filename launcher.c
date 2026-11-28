@@ -21,6 +21,7 @@
 extern int dd_attack_main(int argc, char** argv);
 extern int dd_mag_main(int argc, char** argv);
 extern int dd_veh_main(int argc, char** argv);
+extern int dd_star_main(int argc, char** argv);
 
 #define VANILLA_SIZE 7297853249ULL
 #define BIN_HINT "7017f9bb9d52fc1c4433599203cc51b1.bin"
@@ -216,6 +217,7 @@ int main(int argc, char** argv) {
     char core_a[MAX_PATH], core_m[MAX_PATH];
     char out_a[MAX_PATH], out_m[MAX_PATH];
     char vcore[5][MAX_PATH], vout[5][MAX_PATH];
+    char core_h[MAX_PATH], out_h[MAX_PATH];
     char a_fwd[MAX_PATH], af_fwd[MAX_PATH], w_fwd[MAX_PATH];
     const char* mode = "install";
     const char* hint = NULL;
@@ -310,6 +312,8 @@ int main(int argc, char** argv) {
     snprintf(core_m, sizeof(core_m), "%s\\src_m.core", work);
     snprintf(out_a, sizeof(out_a), "%s\\pack\\ds\\entities\\weapons\\attack_parameter_collection.core", work);
     snprintf(out_m, sizeof(out_m), "%s\\pack\\ds\\entities\\weapons\\magazine_parameter_collection.core", work);
+    snprintf(core_h, sizeof(core_h), "%s\\src_h.core", work);
+    snprintf(out_h, sizeof(out_h), "%s\\pack\\ds\\household\\household.core", work);
     {
         static const char* vnames[5] = {
             "pe_ds_vehicle_bkyk", "pe_ds_vehicle_ca02", "pe_ds_vehicle_ca03",
@@ -335,7 +339,7 @@ int main(int argc, char** argv) {
         pause_exit(1);
     }
 
-    printf("[1/7] Verifying the source archive\n");
+    printf("[1/8] Verifying the source archive\n");
     snprintf(af_fwd, sizeof(af_fwd), "%s", first_run ? arch : archv); to_fwd(af_fwd);
     snprintf(w_fwd, sizeof(w_fwd), "%s", work); to_fwd(w_fwd);
     {
@@ -343,6 +347,8 @@ int main(int argc, char** argv) {
         snprintf(args, sizeof(args), "-e \"%s\" \"ds/entities/weapons/attack_parameter_collection\" \"%s/src_a.core\"", af_fwd, w_fwd);
         run_exe(tool, args, 1);
         snprintf(args, sizeof(args), "-e \"%s\" \"ds/entities/weapons/magazine_parameter_collection\" \"%s/src_m.core\"", af_fwd, w_fwd);
+        run_exe(tool, args, 1);
+        snprintf(args, sizeof(args), "-e \"%s\" \"ds/household/household\" \"%s/src_h.core\"", af_fwd, w_fwd);
         run_exe(tool, args, 1);
         {
             static const char* vp[5] = {
@@ -376,6 +382,11 @@ int main(int argc, char** argv) {
                 if (dd_veh_main(3, vv) != 0) bad = 1;
             }
         }
+        if (fexists(core_h)) {
+            char* vh[3];
+            vh[0] = "dspatch_star"; vh[1] = core_h; vh[2] = "--verify";
+            if (dd_star_main(3, vh) != 0) bad = 1;
+        }
         if (bad) {
             printf("[X] The weapon data in the archive is not the vanilla table.\n");
             printf("    Another mod (or an incomplete restore) is present.\n");
@@ -385,20 +396,20 @@ int main(int argc, char** argv) {
         printf("     all cores match the vanilla tables.\n");
 
         if (first_run) {
-            printf("[2/7] Backing up the original archive (7.3 GB)\n");
+            printf("[2/8] Backing up the original archive (7.3 GB)\n");
             if (!CopyFileA(arch, archv, FALSE)) { printf("[X] Backup failed.\n"); pause_exit(1); }
-        } else printf("[2/7] Backup present and verified\n");
+        } else printf("[2/8] Backup present and verified\n");
 
-        printf("[3/7] Restoring clean state from backup\n");
+        printf("[3/8] Restoring clean state from backup\n");
         if (!CopyFileA(archv, arch, FALSE)) { printf("[X] Restore failed.\n"); pause_exit(1); }
 
-        printf("[4/7] Patching attack parameters\n");
+        printf("[4/8] Patching attack parameters\n");
         {
             char* p1[4];
             p1[0] = "dspatch"; p1[1] = core_a; p1[2] = out_a; p1[3] = ini;
             if (dd_attack_main(4, p1) != 0) { printf("[X] Attack patch failed.\n"); pause_exit(1); }
         }
-        printf("[5/7] Patching magazines\n");
+        printf("[5/8] Patching magazines\n");
         {
             char* p2[4];
             p2[0] = "dspatch_mag"; p2[1] = core_m; p2[2] = out_m; p2[3] = ini;
@@ -406,7 +417,7 @@ int main(int argc, char** argv) {
         }
 
 
-        printf("[6/7] Patching vehicles\n");
+        printf("[6/8] Patching vehicles\n");
         {
             int vi;
             char top[32], tor[32], bst[32];
@@ -427,12 +438,24 @@ int main(int argc, char** argv) {
             }
         }
 
+        if (fexists(core_h)) {
+            char sval[32], hdir[MAX_PATH];
+            char* ph[4];
+            snprintf(sval, sizeof(sval), "%.6f", ds_star_threshold());
+            snprintf(hdir, sizeof(hdir), "%s\\pack\\ds\\household", work);
+            mkdir_p(hdir);
+            printf("[7/8] Patching star thresholds (x%s)\n", sval);
+            ph[0] = "dspatch_star"; ph[1] = core_h; ph[2] = out_h; ph[3] = sval;
+            if (dd_star_main(4, ph) != 0) { printf("[X] Star threshold patch failed.\n"); pause_exit(1); }
+        }
+
         {
             int same = cmp_files(core_a, out_a) && cmp_files(core_m, out_m);
             if (fexists(vcore[0])) same = same && cmp_files(vcore[0], vout[0]);
             if (fexists(vcore[1])) same = same && cmp_files(vcore[1], vout[1]);
             if (fexists(vcore[2])) same = same && cmp_files(vcore[2], vout[2]);
             if (fexists(vcore[3])) same = same && cmp_files(vcore[3], vout[3]);
+            if (fexists(core_h)) same = same && cmp_files(core_h, out_h);
             if (same) {
                 rm_tree(work);
                 printf("\n[OK] Every multiplier is 1 - the archive was left untouched (vanilla).\n");
@@ -441,7 +464,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    printf("[7/7] Repacking the patched files (7.3 GB, takes a few minutes)\n");
+    printf("[8/8] Repacking the patched files (7.3 GB, takes a few minutes)\n");
     snprintf(a_fwd, sizeof(a_fwd), "%s", arch); to_fwd(a_fwd);
     {
         char args[2048];

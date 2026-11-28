@@ -17,6 +17,7 @@ access the network.
 | `dspatch.c` | verifies and patches `attack_parameter_collection.core` (damage / range) |
 | `dspatch_mag.c` | verifies and patches `magazine_parameter_collection.core` (magazine / pellets) |
 | `dspatch_veh.c` | verifies and patches `pe_ds_vehicle_*.core` (top speed / torque / boost) |
+| `dspatch_star.c` | scales facility star thresholds in `ds/household/household.core` |
 | `dsconfig.c/.h` | `DSDamage.ini` parser shared by both patchers |
 | `vanilla_table.h` | 247 vanilla attack records (id + damage bits) used for verification |
 | `attack_categories.h` | category per `EDSAttackId` |

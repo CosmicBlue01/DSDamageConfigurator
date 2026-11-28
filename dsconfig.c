@@ -19,6 +19,7 @@ static float gZipline = 1.0f;
 static float gVehTop[4] = {60.0f, 50.0f, 60.0f, 80.0f};
 static float gVehTorque[4] = {500.0f, 500.0f, 500.0f, 500.0f};
 static float gVehBoost[4] = {3.0f, 3.0f, 3.0f, 3.0f};
+static float gStars = 1.0f;
 
 static int ieq(const char* a, const char* b) {
     while (*a && *b) {
@@ -73,6 +74,7 @@ int ds_config_load(const char* path) {
             else if (ieq(p, "TruckCA02")) section = -5;
             else if (ieq(p, "TruckCA03")) section = -6;
             else if (ieq(p, "SpeedCar")) section = -7;
+            else if (ieq(p, "Stars")) section = -8;
             else section = category_of(p);
             continue;
         }
@@ -87,6 +89,10 @@ int ds_config_load(const char* path) {
         }
         if (section == -3) {
             if (ieq(p, "Speed")) { float v = (float)atof(eq + 1); if (v > 0.0f) gZipline = v; }
+            continue;
+        }
+        if (section == -8) {
+            if (ieq(p, "Threshold")) { float v = (float)atof(eq + 1); if (v > 0.0f) gStars = v; }
             continue;
         }
         if (section <= -4 && section >= -7) {
@@ -123,3 +129,4 @@ float ds_zipline_speed(void) { return gZipline; }
 float ds_veh_top(int kind) { return gVehTop[kind]; }
 float ds_veh_torque(int kind) { return gVehTorque[kind]; }
 float ds_veh_boost(int kind) { return gVehBoost[kind]; }
+float ds_star_threshold(void) { return gStars; }

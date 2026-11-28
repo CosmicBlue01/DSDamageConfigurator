@@ -21,3 +21,4 @@ float ds_zipline_speed(void);
 float ds_veh_top(int kind);
 float ds_veh_torque(int kind);
 float ds_veh_boost(int kind);
+float ds_star_threshold(void);
